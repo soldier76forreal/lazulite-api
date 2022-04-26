@@ -14,10 +14,12 @@ const userSchema = new mongoose.Schema ({
     postalCode:{type:String},
     address:{type:String},
     products:{type:Array},
+    oldPasswords:{type:Array},
     passwordReset:{type:Array},
     savedPost:{type:Array},
     insertDate : {type:Date , default:Date.now},
     updateDate : {type:Date , default:null},
+
     deleteDate : {type:Date , default:null},
 });
 module.exports = userSchema;

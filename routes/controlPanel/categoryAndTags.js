@@ -5,6 +5,8 @@ const categoryModel = require("../../models/categoryModel");
 const userModel = require("../../models/userModel");
 const dbConnection = require('../../connections/fa_connection');
 const dbConnection2 = require('../../connections/ar_connection');
+const dbConnection3 = require('../../connections/en_connection');
+
 const verify = require("../users/verifyToken");
 const { json } = require('body-parser');
 const router = express.Router()
@@ -481,7 +483,7 @@ router.post("/deleteCategoryAr", verify , async (req , res , next)=>{
 router.post("/newTagAr", verify , async (req , res , next)=>{
     if(req.body.categoryId){
         try{   
-           if(await tag.findOne({tag:req.body.tag})){
+           if(await tagAr.findOne({tag:req.body.tag})){
                res.status(403).send("تگ تکراری است");
            }else{
                 var newTag = new tagAr({
@@ -734,6 +736,376 @@ router.post("/updateTagAr", verify , async (req , res , next)=>{
     }catch(err){
  
         res.status(500).send("عملیات انجام نشد!");
+    }
+});
+
+
+
+
+
+//------------************ main web api ************------------
+router.get("/getAllCategoriesWithTagsForMainPageAr" ,async(req , res)=>{
+    let arrayToSend = [];
+    try{
+        const result = await categoryAr.find({deleteDate:null , validation:true});
+        for(var i = 0 ; result.length>i ; i++){
+          const rs2 = await tag.find({deleteDate:null}).where('_id').in(result[i].tagsId);
+            arrayToSend.push({category:result[i] , tags:rs2 });
+        }
+        res.status(200).send(JSON.stringify({rs:arrayToSend}));
+    }catch(err){
+        console.log(err)
+        res.status(500).send("مشکلی رخ داده است");
+    }
+});
+
+
+
+//---------------------------------------------------------------English---------------------------------------------------------
+
+
+const categoryEn = dbConnection3.model("category" ,categoryModel );
+const tagEn = dbConnection3.model("tag" ,tagModel );
+
+router.get("/getAllCategoriesEn", verify ,async(req , res)=>{
+    try{
+        const length = await categoryEn.countDocuments({deleteDate:null});
+        const result = await categoryEn.find({deleteDate:null}).limit(parseInt(req.query.limit));
+        var authorIds =[];
+        var finalArr  = [];
+        for(var i = 0 ; result.length > i ; i++){
+            authorIds.push(result[i].author);
+        }
+        const rs2 = await user.find({deleteDate:null}).select('firstName , lastName , validation , role , insertDate , profileImage').where('_id').in(authorIds);
+        for(var i = 0 ; result.length > i ; i++){
+            for(var j = 0 ; rs2.length > j ; j++){
+                
+                if(JSON.stringify(result[i].author) === JSON.stringify(rs2[j]._id)){
+                    finalArr.push({category:result[i] , author:rs2[j]});
+                }
+            }
+        }
+        res.status(200).send(JSON.stringify({ln:length , rs:finalArr})); 
+    }catch(err){
+           res.status(500).send("مشکلی رخ داده است");
+    }
+
+});
+//get all tags
+router.get("/getAllTagsForMultiSelectEn", verify , (req , res)=>{
+    var newArrayToSend = [];
+    try{
+        tagEn.find({deleteDate:null},(err,data)=>{
+            for(var i=0 ; data.length > i ; i++){
+                if(data[i].categoriesId.includes(req.query.params) === false){
+                    newArrayToSend.push(data[i]);
+                }
+            }
+            res.status(200).send(newArrayToSend);
+        })
+    }catch(err){
+           res.status(500).send("مشکلی رخ داده است");
+    }
+});
+
+
+//new category
+router.post("/newCategoryEn", verify , async (req , res , next)=>{
+    if(req.body.categoryData){
+        var newCategory = new categoryEn({
+            author:req.body.author,
+            category:req.body.categoryData      
+        })
+        try{
+            const result = await newCategory.save();
+            res.status(200).send({msg:'دسته بندی جدید اضافه شد' , result:result});
+        }catch(error){
+             res.status(403).send("دسته بندی تکراری است");
+        }
+    }
+});
+
+//delete category
+router.post("/deleteCategoryEn", verify , async (req , res , next)=>{
+    if(req.body.categoryId){
+        try{
+            await categoryEn.findOneAndUpdate({_id:req.body.categoryId} , {deleteDate:Date.now()});
+            res.status(200).send("دسته بندی حذف شد");
+        }catch(error){
+             res.status(403).send("مشکلی پیش آمده، دسته بندی حذف نشد");
+        }
+    }
+});
+
+
+
+router.post("/newTagEn", verify , async (req , res , next)=>{
+    if(req.body.categoryId){
+        try{   
+           if(await tagEn.findOne({tag:req.body.tag})){
+               res.status(403).send("تگ تکراری است");
+           }else{
+                var newTag = new tagEn({
+                    author:req.body.author,
+                    tag:req.body.tag,
+                    categoriesId:req.body.categoryId,
+                    validation:[{categoryId:req.body.categoryId , validationStatus:false}]
+                })
+                const newTagResult = await newTag.save();
+               const categoryUpdateResult =await categoryEn.findOneAndUpdate({_id:req.body.categoryId} , {$push:{tagsId:newTagResult._id}});
+               res.status(200).send(JSON.stringify({tagResult:newTagResult , categoryResult:categoryUpdateResult , msg:"تگ اضاف شد"}));
+           }
+        }catch(error){
+            console.log(error);
+            res.status(403).send("خطا!تگ اضاف جدید ایجاد نشد");
+        }
+
+    }else{
+        res.status(403).send("دسته بندی را انتخاب نکردید");
+
+    }
+});
+
+
+router.post("/addTagToCategoryEn", verify , async (req , res , next)=>{
+    if(req.body.categoryId){
+      try{
+         const categoryRes = await categoryEn.findOneAndUpdate({_id:req.body.categoryId} ,  {$push:{tagsId:req.body.tags}});
+         const tagResponse = await tagEn.updateMany(   { _id: { $in: req.body.tags } },
+         { $push: { categoriesId : req.body.categoryId , validation:{categoryId:req.body.categoryId  , validationStatus:false} } },
+         {multi: true})
+         res.status(200).send(JSON.stringify({tagResult:tagResponse , categoryResult:categoryRes , msg:"دسته بندی بروز شد"}));
+      }catch{
+        res.status(403).send("خطا!دسته بندی بروزرسانی نشد");
+      }
+    }else{
+        res.status(403).send("دسته بندی را انتخاب نکردید");
+    }
+});
+
+
+router.post("/updateCategoryEn", verify , async (req , res , next)=>{
+    try{
+        const result =await categoryEn.updateOne({_id:req.body.id} ,{'$set': {
+            category:req.body.value,
+             updateDate:Date.now()
+       }});
+        res.status(200).send(result);  
+    }catch(err){
+ 
+        res.status(500).send("عملیات انجام نشد!");
+    }
+});
+
+
+
+router.post("/searchInCategoryEn", verify , async (req , res , next)=>{
+    // var regex = new RegExp(req.body.searching, "i");
+    if(req.body.searching){
+        try{
+            const searched = await categoryEn.find({
+                deleteDate:null,
+                "category" :   { "$regex": req.body.searching, "$options":"i"}
+            }).limit(parseInt(20));
+            var authorIds =[];
+            var finalArr  = [];
+            for(var i = 0 ; searched.length > i ; i++){
+                authorIds.push(searched[i].author);
+            }
+            const rs2 = await user.find({deleteDate:null}).select('firstName , lastName , validation , role , insertDate , profileImage').where('_id').in(authorIds);
+            for(var i = 0 ; searched.length > i ; i++){
+                for(var j = 0 ; rs2.length > j ; j++){
+                    
+                    if(JSON.stringify(searched[i].author) === JSON.stringify(rs2[j]._id)){
+                        finalArr.push({category:searched[i] , author:rs2[j]});
+                    }
+                }
+            }
+            res.status(200).send(JSON.stringify(finalArr)); 
+        }catch(err){
+            res.status(500).send("مشکلی پیش آمده");
+        }
+
+    }else{
+        res.status(200).send([]);
+
+    }
+});
+
+
+router.post("/validationUpdateEn", verify , async (req , res , next)=>{
+
+    if(await categoryEn.findOne({_id:req.body.id , validation:true}).exec()){
+        try{
+            const response = await categoryEn.updateOne({_id:req.body.id} , {validation:false});
+            const data = response;
+            res.send(data);
+            
+         }catch(error){
+              res.status(403).send("خطایی رخ داده است!");
+     
+         }
+    }else{
+        try{
+            const response = await categoryEn.updateOne({_id:req.body.id} , {validation:true});
+            const data = response;
+            res.send(data);
+         }catch(error){
+              res.status(403).send("خطایی رخ داده است!");
+         }
+    }
+    
+});
+
+
+//delete category
+router.post("/deleteTagEn", verify , async (req , res , next)=>{
+
+    if(req.body.tagId){
+        const check = await tagEn.findOne({_id:req.body.tagId});
+        if(check.categoriesId.length===1){
+            try{
+                await tagEn.findOneAndUpdate({_id:req.body.tagId} ,{ deleteDate:Date.now() , $pull: {
+                 categoriesId: req.body.categoryId,validation:{categoryId:req.body.categoryId}
+             }}, {useFindAndModify: false});
+                 res.status(200).send("تگ حذف شد");
+             }catch(error){
+                  res.status(403).send("مشکلی پیش آمده، تگ حذف نشد");
+                  console.log(error);
+             }
+        }else if(check.categoriesId.length>1){
+            try{
+                await tagEn.findOneAndUpdate({_id:req.body.tagId} ,{ $pull: {
+                 categoriesId: req.body.categoryId,validation:{categoryId:req.body.categoryId}
+             }}, {useFindAndModify: false});
+                 res.status(200).send("تگ حذف شد");
+             }catch(error){
+                  res.status(403).send("مشکلی پیش آمده، تگ حذف نشد");
+                  console.log(error);
+
+             }
+        }
+    }
+});
+
+
+
+//get all tags for list
+router.get("/getAllTagsForListEn", verify ,async(req , res)=>{
+    const arrayToSend = [];
+    try{
+        const length = await tagEn.countDocuments({deleteDate:null});
+        const result = await tagEn.find({deleteDate:null}).limit(parseInt(req.query.limit));
+        for(var i = 0 ; result.length>i ; i++){
+          const rs2 = await categoryEn.find({deleteDate:null}).where('_id').in(result[i].categoriesId);
+          for(var j = 0 ; rs2.length > j ; j++){
+            arrayToSend.push({tag:result[i] , category:rs2[j] });
+          }
+        }
+        res.status(200).send(JSON.stringify({ln:length , rs:arrayToSend}));
+    }catch(err){
+        res.status(500).send("مشکلی رخ داده است");
+    }
+
+});
+
+
+router.post("/tagValidationEn", verify , async (req , res , next)=>{
+    // console.log(req.body.tagId);
+    var check = await tagEn.findOne({_id:req.body.tagId});
+    for(var i = 0 ; check.validation.length > i ; i++){
+        if(check.validation[i].categoryId === req.body.categoryId && check.validation[i].validationStatus === false ){
+            
+                try{
+                    const response = await tagEn.updateOne({_id:req.body.tagId , 'validation.categoryId': req.body.categoryId} , {'$set': {
+                        'validation.$.validationStatus': true
+                    }});           
+                        const data = response;
+                    res.send(data);
+                
+                }catch(error){
+                    res.status(403).send("خطایی رخ داده است!");
+
+                    console.log(error)
+                }
+        }else if(check.validation[i].categoryId === req.body.categoryId && check.validation[i].validationStatus === true){
+                
+                     try{
+                        const response = await tagEn.updateOne({_id:req.body.tagId , 'validation.categoryId': req.body.categoryId} , {'$set': {
+                            'validation.$.validationStatus': false
+                        }});
+                        const data = response;
+                        res.send(data);
+                        
+                    }catch(error){
+                        res.status(403).send("خطایی رخ داده است!");
+                
+                    }
+        }
+    } 
+});
+
+router.post("/searchInTagsEn", verify , async (req , res , next)=>{
+    // var regex = new RegExp(req.body.searching, "i");
+    if(req.body.searching){
+        try{
+            const searched = await tagEn.find({
+                deleteDate:null,
+                "tag" :   { "$regex": req.body.searching, "$options":"i"}
+            }).limit(parseInt(20));
+            var authorIds =[];
+            var finalArr  = [];
+            for(var i = 0 ; searched.length > i ; i++){
+                authorIds.push(searched[i].author);
+            }
+            const rs2 = await user.find({deleteDate:null}).select('firstName , lastName , validation , role , insertDate , profileImage').where('_id').in(authorIds);
+            for(var i = 0 ; searched.length > i ; i++){
+                for(var j = 0 ; rs2.length > j ; j++){
+                    
+                    if(JSON.stringify(searched[i].author) === JSON.stringify(rs2[j]._id)){
+                        finalArr.push({tags:searched[i] , author:rs2[j]});
+                    }
+                }
+            }
+            res.status(200).send(JSON.stringify(finalArr)); 
+        }catch(err){
+            res.status(500).send("مشکلی پیش آمده");
+        }
+    }else{
+        res.status(200).send([]);
+    }
+});
+
+
+router.post("/updateTagEn", verify , async (req , res , next)=>{
+    try{
+        const result =await tagEn.updateOne({_id:req.body.id} ,{'$set': {
+            tag:req.body.value,
+             updateDate:Date.now()
+       }});
+        res.status(200).send(result);  
+    }catch(err){
+ 
+        res.status(500).send("عملیات انجام نشد!");
+    }
+});
+
+
+//------------************ main web api ************------------
+
+router.get("/getAllCategoriesWithTagsForMainPageEn" ,async(req , res)=>{
+    let arrayToSend = [];
+    try{
+        const result = await categoryEn.find({deleteDate:null , validation:true});
+        for(var i = 0 ; result.length>i ; i++){
+          const rs2 = await tagEn.find({deleteDate:null}).where('_id').in(result[i].tagsId);
+            arrayToSend.push({category:result[i] , tags:rs2 });
+        }
+        res.status(200).send(JSON.stringify({rs:arrayToSend}));
+       
+    }catch(err){
+        console.log(err)
+        res.status(500).send("مشکلی رخ داده است");
     }
 });
 

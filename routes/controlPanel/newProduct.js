@@ -15,6 +15,7 @@ const commentModel = require("../../models/commentModel");
 
 const dbConnection = require('../../connections/fa_connection');
 const dbConnection2 = require('../../connections/ar_connection');
+const dbConnection3 = require('../../connections/en_connection');
 const product = dbConnection.model("product" ,productModel );
 const category = dbConnection.model("category" ,categoryModel );
 const tag = dbConnection.model("tag" ,tagModel);
@@ -22,6 +23,7 @@ const opratorM = dbConnection.model("oprator" ,opratorModel);
 const waOpratorM = dbConnection.model("whatsAppOprator" ,whatsAppOpratorModel);
 const featureList = dbConnection.model("featureList" ,featureListModel );
 const comment = dbConnection.model('comment' , commentModel);
+
 
 //get all category
 router.get("/getAllCategories", verify ,async (req , res)=>{
@@ -42,10 +44,8 @@ router.get("/getAllTags", verify ,async (req , res)=>{
 
         }else if(records){
             res.status(200).send(records);
-
         }
     });
-
 });
 
 router.get("/getAllOprator", verify ,async (req , res)=>{
@@ -239,6 +239,7 @@ router.get("/getAllCategoriesAr", verify ,async (req , res)=>{
     }
 
 });
+
 router.get("/getAllTagsAr", verify ,async (req , res)=>{
     tagAr.find().where('categoriesId').in(
         req.query.categoriesId
@@ -248,10 +249,8 @@ router.get("/getAllTagsAr", verify ,async (req , res)=>{
 
         }else if(records){
             res.status(200).send(records);
-
         }
     });
-
 });
 
 router.get("/getAllOpratorAr", verify ,async (req , res)=>{
@@ -261,7 +260,6 @@ router.get("/getAllOpratorAr", verify ,async (req , res)=>{
     }catch(err){
            res.status(500).send("مشکلی رخ داده است");
     }
-
 });
 
 router.get("/getAllWaOpratorAr" , verify,async (req , res)=>{
@@ -271,8 +269,8 @@ router.get("/getAllWaOpratorAr" , verify,async (req , res)=>{
     }catch(err){
            res.status(500).send("مشکلی رخ داده است");
     }
-
 });
+
 router.post("/saveNewProductAr" , verify,async (req , res)=>{
     var newProduct = new productAr({
         title:req.body.title,
@@ -377,6 +375,242 @@ router.post("/updateProductAr" , verify ,async (req , res)=>{
         res.status(200).send(result);
     }catch(error){
          res.status(403).send("خطا!محصول ویرایش نشد");
+    }
+});
+
+
+//------------************ main web api ************------------
+router.get("/getProductForMainAr" ,async (req , res)=>{
+    var json = {}
+    try{
+        var response =await productAr.findOne({deleteDate:null , validation:true , _id:req.query.id});
+        var tempRes = response;
+        var overalRate = 0;
+        var commentsLength = [];
+
+        const comments = await comment.find({validation:true , deleteDate:null , targetPost:req.query.id });
+        if(comments.length ===0){
+            overalRate = 0;
+        }else{
+            for(var i = 0 ; comments.length > i ; i++){
+                if(comments[i].rate !== null){
+                    commentsLength.push(comments[i].rate);
+                    overalRate = comments[i].rate + overalRate;
+                }
+            }
+            overalRate = overalRate/commentsLength.length;
+        }
+
+        
+
+        const whatsAppContact =await waOpratorMAr.findOne({deleteDate:null , _id:response.contactButtons[0]}).select('firstName , lastName , phoneNumber , _id');
+        const phoneContact =await opratorMAr.findOne({deleteDate:null ,  _id:response.contactButtons[1]}).select('firstName , lastName , phoneNumbers , _id');
+        json.product =response; 
+        json.phoneContacts = [whatsAppContact,phoneContact];
+        json.productRate = overalRate;
+        res.status(200).send(json);
+    }catch(err){
+           res.status(500).send("مشکلی رخ داده است");
+           console.log(err);
+    }
+});
+
+
+
+//---------------------------------------------------------------English---------------------------------------------------------
+
+const productEn = dbConnection3.model("product" ,productModel );
+const categoryEn = dbConnection3.model("category" ,categoryModel );
+const tagEn = dbConnection3.model("tag" ,tagModel);
+
+const featureListEn = dbConnection3.model("featureList" ,featureListModel );
+const opratorMEn = dbConnection3.model("oprator" ,opratorModel);
+const waOpratorMEn = dbConnection3.model("whatsAppOprator" ,whatsAppOpratorModel);
+
+//get all category
+router.get("/getAllCategoriesEn", verify ,async (req , res)=>{
+    try{
+        const response =await categoryEn.find({deleteDate:null});
+        res.status(200).send(response);
+    }catch(err){
+           res.status(500).send("مشکلی رخ داده است");
+    }
+
+});
+router.get("/getAllTagsEn", verify ,async (req , res)=>{
+    tagEn.find().where('categoriesId').in(
+        req.query.categoriesId
+    ).exec((err, records) => {
+        if(err){
+            res.status(500).send("مشکلی رخ داده است");
+
+        }else if(records){
+            res.status(200).send(records);
+
+        }
+    });
+
+});
+
+router.get("/getAllOpratorEn", verify ,async (req , res)=>{
+    try{
+        const response =await opratorMEn.find({deleteDate:null});
+        res.status(200).send(response);
+    }catch(err){
+           res.status(500).send("مشکلی رخ داده است");
+    }
+
+});
+
+router.get("/getAllWaOpratorEn" , verify,async (req , res)=>{
+    try{
+        const response =await waOpratorMEn.find({deleteDate:null});
+        res.status(200).send(response);
+    }catch(err){
+           res.status(500).send("مشکلی رخ داده است");
+    }
+
+});
+router.post("/saveNewProductEn" , verify,async (req , res)=>{
+    var newProduct = new productEn({
+        title:req.body.title,
+        price:req.body.price,
+        contactButtons:req.body.contactBtn,
+        images:req.body.images,
+        categories:req.body.categories,
+        tags:req.body.tags,
+        productCode:req.body.productCode,
+        availableSurface:req.body.availableSurface,
+        features:req.body.featureList,
+        keyFeatures:req.body.keyFeatures,
+        author:req.body.author,
+        productRiview:req.body.productRiview
+    })
+    try{
+        const result = await newProduct.save();
+        res.status(200).send(result);
+    }catch(error){
+         res.status(403).send("خطا!محصول ذخیره نشد");
+         console.log(error)
+    }
+});
+
+
+//feature Name
+router.post("/newFeatureListEn", verify , async (req , res , next)=>{
+    var newFeatureList = new featureListEn({
+        listName:req.body.listName,
+        featureList:req.body.featureList,
+    })
+    try{
+        const result = await newFeatureList.save();
+        res.status(200).send(result);
+    }catch(error){
+         res.status(403).send("دسته بندی تکراری است");
+    }
+});
+router.get("/getAllFeatureListEn", verify ,async (req , res)=>{
+    try{
+        const response =await featureListEn.find({deleteDate:null});
+        res.status(200).send(response);
+    }catch(err){
+           res.status(500).send("مشکلی رخ داده است");
+    }
+});
+router.get("/getTheListEn", verify ,async (req , res)=>{
+    try{
+        const response =await featureListEn.findOne({deleteDate:null , _id:req.query.listId});
+        res.status(200).send(response);
+    }catch(err){
+           res.status(500).send("مشکلی رخ داده است");
+    }
+});
+
+router.get("/getProductEn" , verify,async (req , res)=>{
+    var json = {}
+    try{
+        var response =await productEn.findOne({deleteDate:null , _id:req.query.id});
+        var tempRes = response;
+        const whatsAppContact =await waOpratorMEn.findOne({deleteDate:null , _id:response.contactButtons[0]});
+        const phoneContact =await opratorMEn.findOne({deleteDate:null , _id:response.contactButtons[1]});
+        json.product =response; 
+        json.phoneContacts = [whatsAppContact,phoneContact];
+        res.status(200).send(json);
+    }catch(err){
+           res.status(500).send("مشکلی رخ داده است");
+           console.log(err);
+    }
+});
+
+//delete category
+router.post("/deleteFeatureListEn", verify, async (req , res , next)=>{
+    if(req.body.deleteTheListId){
+        try{
+           await featureListEn.findOneAndUpdate({_id:req.body.deleteTheListId} , {deleteDate:Date.now()});
+            res.status(200).send("لیست مورد نظر حذف شد");
+        }catch(error){
+             res.status(403).send("خطا!لیست حذف نشد");
+        }
+    }
+});
+
+
+router.post("/updateProductEn" , verify ,async (req , res)=>{
+    try{
+        const result = await productEn.findOneAndUpdate({_id:req.body.productIdToUpdate} 
+            , {title:req.body.title,
+            price:req.body.price,
+            contactButtons:req.body.contactBtn,
+            images:req.body.images,
+            categories:req.body.categories,
+            tags:req.body.tags,
+            features:req.body.featureList,
+            keyFeatures:req.body.keyFeatures,
+            productCode:req.body.productCode,
+            availableSurface:req.body.availableSurface,
+            updateDate:Date.now(),
+            productRiview:req.body.productRiview})
+        res.status(200).send(result);
+    }catch(error){
+         res.status(403).send("خطا!محصول ویرایش نشد");
+    }
+});
+
+
+//------------************ main web api ************------------
+
+router.get("/getProductForMainEn" ,async (req , res)=>{
+    var json = {}
+    try{
+        var response =await productEn.findOne({deleteDate:null , validation:true , _id:req.query.id});
+        var tempRes = response;
+        var overalRate = 0;
+        var commentsLength = [];
+
+        const comments = await comment.find({validation:true , deleteDate:null , targetPost:req.query.id });
+        if(comments.length ===0){
+            overalRate = 0;
+        }else{
+            for(var i = 0 ; comments.length > i ; i++){
+                if(comments[i].rate !== null){
+                    commentsLength.push(comments[i].rate);
+                    overalRate = comments[i].rate + overalRate;
+                }
+            }
+            overalRate = overalRate/commentsLength.length;
+        }
+
+        
+
+        const whatsAppContact =await waOpratorMEn.findOne({deleteDate:null , _id:response.contactButtons[0]}).select('firstName , lastName , phoneNumber , _id');
+        const phoneContact =await opratorMEn.findOne({deleteDate:null ,  _id:response.contactButtons[1]}).select('firstName , lastName , phoneNumbers , _id');
+        json.product =response; 
+        json.phoneContacts = [whatsAppContact,phoneContact];
+        json.productRate = overalRate;
+        res.status(200).send(json);
+    }catch(err){
+           res.status(500).send("مشکلی رخ داده است");
+           console.log(err);
     }
 });
 

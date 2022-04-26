@@ -10,6 +10,7 @@ module.exports =function  (req , res , next){
         token = token.split(" ")[1];
         try{
             const verified = jwt.verify(token , process.env.TOKEN_SECRETFORMAIN);
+            
             req.user = verified;
             next();
         }catch(err){
