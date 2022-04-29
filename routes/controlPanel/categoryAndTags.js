@@ -54,6 +54,7 @@ router.get("/getAllCategories", verify ,async(req , res)=>{
         const length = await category.countDocuments({deleteDate:null});
         const result = await category.find({deleteDate:null}).limit(parseInt(req.query.limit));
         var authorIds =[];
+        var tempArr  = [];
         var finalArr  = [];
         for(var i = 0 ; result.length > i ; i++){
             authorIds.push(result[i].author);
@@ -63,10 +64,11 @@ router.get("/getAllCategories", verify ,async(req , res)=>{
             for(var j = 0 ; rs2.length > j ; j++){
                 
                 if(JSON.stringify(result[i].author) === JSON.stringify(rs2[j]._id)){
-                    finalArr.push({category:result[i] , author:rs2[j]});
+                    tempArr.push({category:result[i] , author:rs2[j]});
                 }
             }
         }
+        finalArr = tempArr.reverse();
         res.status(200).send(JSON.stringify({ln:length , rs:finalArr})); 
     }catch(err){
            res.status(500).send("مشکلی رخ داده است");
@@ -281,21 +283,23 @@ router.post("/deleteTag", verify , async (req , res , next)=>{
 
 //get all tags for list
 router.get("/getAllTagsForList", verify ,async(req , res)=>{
-    const arrayToSend = [];
+    const tempArr = [];
+    var finalArr  = [];
     try{
         const length = await tag.countDocuments({deleteDate:null});
         const result = await tag.find({deleteDate:null}).limit(parseInt(req.query.limit));
         for(var i = 0 ; result.length>i ; i++){
+          const authors = await user.find({deleteDate:null}).select('firstName , lastName , validation , role , insertDate , profileImage').where('_id').in(result[i].author);   
           const rs2 = await category.find({deleteDate:null}).where('_id').in(result[i].categoriesId);
           for(var j = 0 ; rs2.length > j ; j++){
-            arrayToSend.push({tag:result[i] , category:rs2[j] });
+            tempArr.push({tag:result[i] , author:authors[0] , category:rs2[j] });
           }
         }
-        res.status(200).send(JSON.stringify({ln:length , rs:arrayToSend}));
+        finalArr = tempArr.reverse();
+        res.status(200).send(JSON.stringify({ln:length , rs:finalArr}));
     }catch(err){
         res.status(500).send("مشکلی رخ داده است");
     }
-
 });
 
 
@@ -304,17 +308,14 @@ router.post("/tagValidation", verify , async (req , res , next)=>{
     var check = await tag.findOne({_id:req.body.tagId});
     for(var i = 0 ; check.validation.length > i ; i++){
         if(check.validation[i].categoryId === req.body.categoryId && check.validation[i].validationStatus === false ){
-            
                 try{
                     const response = await tag.updateOne({_id:req.body.tagId , 'validation.categoryId': req.body.categoryId} , {'$set': {
                         'validation.$.validationStatus': true
                     }});           
                         const data = response;
-                    res.send(data);
-                
+                    res.send(data); 
                 }catch(error){
                     res.status(403).send("خطایی رخ داده است!");
-
                     console.log(error)
                 }
         }else if(check.validation[i].categoryId === req.body.categoryId && check.validation[i].validationStatus === true){
@@ -338,27 +339,23 @@ router.post("/tagValidation", verify , async (req , res , next)=>{
 
 router.post("/searchInTags", verify , async (req , res , next)=>{
     // var regex = new RegExp(req.body.searching, "i");
+    var arrayToSend = [];
     if(req.body.searching){
+        
         try{
             const searched = await tag.find({
                 deleteDate:null,
                 "tag" :   { "$regex": req.body.searching, "$options":"i"}
             }).limit(parseInt(20));
-            var authorIds =[];
-            var finalArr  = [];
-            for(var i = 0 ; searched.length > i ; i++){
-                authorIds.push(searched[i].author);
-            }
-            const rs2 = await user.find({deleteDate:null}).select('firstName , lastName , validation , role , insertDate , profileImage').where('_id').in(authorIds);
-            for(var i = 0 ; searched.length > i ; i++){
+            for(var i = 0 ; searched.length>i ; i++){
+                const authors = await user.find({deleteDate:null}).select('firstName , lastName , validation , role , insertDate , profileImage').where('_id').in(searched[i].author);   
+                const rs2 = await category.find({deleteDate:null}).where('_id').in(searched[i].categoriesId);
                 for(var j = 0 ; rs2.length > j ; j++){
-                    
-                    if(JSON.stringify(searched[i].author) === JSON.stringify(rs2[j]._id)){
-                        finalArr.push({tags:searched[i] , author:rs2[j]});
-                    }
+                  arrayToSend.push({tag:searched[i] , author:authors[0] , category:rs2[j] });
                 }
-            }
-            res.status(200).send(JSON.stringify(finalArr)); 
+              }
+              
+              res.status(200).send(JSON.stringify({rs:arrayToSend})); 
         }catch(err){
             res.status(500).send("مشکلی پیش آمده");
         }
