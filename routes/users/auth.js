@@ -27,7 +27,7 @@ const transporter = nodemailer.createTransport(smtpTransport({
 
 let refreshTokens = [];
 let refreshTokensForMain = [];
-const url = 'http://localhost:3000'
+const url = 'https://lazulitemarble.com'
 const userM = dbConnection.model("user" ,userModel);
 
 //VALIDATION
@@ -134,8 +134,6 @@ router.post("/register" , async(req,res)=>{
             if(existEmail){
                 res.status(400).send("ایمیل تکراری است");
             }else{
-                  
-                
                 //hash password
                 const salt = await bcrypt.genSalt(10);
                 const hashPassword = await bcrypt.hash(req.body.password , salt);
@@ -147,7 +145,6 @@ router.post("/register" , async(req,res)=>{
                     validation : false,
                     role: "user"
                 })
-            
                 try{
                     const saveUser = await newUser.save();
                     const user = await userM.findOne({email:req.body.email});

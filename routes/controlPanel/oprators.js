@@ -16,6 +16,12 @@ const opratorM = dbConnection.model("oprator" ,opratorModel);
 const waOpratorM = dbConnection.model("whatsAppOprator" ,whatsAppOpratorModel);
 const user = dbConnection.model("user" ,userModel);
 
+const opratorMAr = dbConnection2.model("oprator" ,opratorModel);
+const waOpratorMAr = dbConnection2.model("whatsAppOprator" ,whatsAppOpratorModel);
+
+const opratorMEn = dbConnection3.model("oprator" ,opratorModel);
+const waOpratorMEn = dbConnection3.model("whatsAppOprator" ,whatsAppOpratorModel);
+
 var maxSize = 1 * 1000 * 1000;
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -32,8 +38,15 @@ const storage = multer.diskStorage({
 const router = express.Router()
 
 router.post("/newOprator" , verify  ,  async (req , res , next)=>{
-
-    var newOprator = new opratorM({
+    var opratorDbConnection;
+    if(req.body.language === 'persian'){
+        opratorDbConnection = opratorM;
+    }else if(req.body.language === 'arabic'){
+        opratorDbConnection = opratorMAr;
+    }else if(req.body.language === 'english'){
+        opratorDbConnection = opratorMEn;
+    }
+    var newOprator = new opratorDbConnection({
         firstName:req.body.firstName,
         lastName:req.body.lastName,
         phoneNumbers:req.body.phoneNumbers,
@@ -50,10 +63,18 @@ router.post("/newOprator" , verify  ,  async (req , res , next)=>{
 
 
 router.get("/getOprators", verify , async (req , res , next)=>{
+    var opratorDbConnection;
+    if(req.query.language === 'persian'){
+        opratorDbConnection = opratorM;
+    }else if(req.query.language === 'arabic'){
+        opratorDbConnection = opratorMAr;
+    }else if(req.query.language === 'english'){
+        opratorDbConnection = opratorMEn;
+    }
     if(req.query.limit !== ''){
         try{
-            const result =await opratorM.find({deleteDate:null}).limit(parseInt(req.query.limit));
-            const length =await opratorM.countDocuments({deleteDate:null});
+            const result =await opratorDbConnection.find({deleteDate:null}).limit(parseInt(req.query.limit));
+            const length =await opratorDbConnection.countDocuments({deleteDate:null});
             var authorIds =[];
             var finalArr  = [];
             for(var i = 0 ; result.length > i ; i++){
@@ -77,9 +98,16 @@ router.get("/getOprators", verify , async (req , res , next)=>{
 
 
 router.post("/opSearch", verify , async (req , res , next)=>{
-
+            var opratorDbConnection;
+            if(req.body.language === 'persian'){
+                opratorDbConnection = opratorM;
+            }else if(req.body.language === 'arabic'){
+                opratorDbConnection = opratorMAr;
+            }else if(req.body.language === 'english'){
+                opratorDbConnection = opratorMEn;
+            }
         try{
-            const result =await opratorM.aggregate([
+            const result =await opratorDbConnection.aggregate([
                 {$project: {"name" : { $concat : ["$firstName"," ","$lastName"]}  , 'deleteDate':'$deleteDate', insertDate:'$insertDate' , firstName:'$firstName' , lastName:'$lastName' , phoneNumbers:"$phoneNumbers" , author: "$author", contactRequest:'$contactRequest'}},
                 {$match: {"name": {$regex: req.body.searching} , 'deleteDate':null}}
             ]);
@@ -115,8 +143,16 @@ router.post("/opSearch", verify , async (req , res , next)=>{
 
 
 router.post("/updateOprator", verify , async (req , res , next)=>{
+    var opratorDbConnection;
+    if(req.body.language === 'persian'){
+        opratorDbConnection = opratorM;
+    }else if(req.body.language === 'arabic'){
+        opratorDbConnection = opratorMAr;
+    }else if(req.body.language === 'english'){
+        opratorDbConnection = opratorMEn;
+    }
     try{
-        const result =await opratorM.updateOne({_id:req.body.id} , {'$set': {
+        const result =await opratorDbConnection.updateOne({_id:req.body.id} , {'$set': {
              'firstName' : req.body.firstName,
              'lastName':req.body.lastName,
             'phoneNumbers': req.body.phoneNumbers,
@@ -129,10 +165,18 @@ router.post("/updateOprator", verify , async (req , res , next)=>{
 
 //delete category
 router.post("/deleteOprator", verify , async (req , res , next)=>{
+    var opratorDbConnection;
+    if(req.body.language === 'persian'){
+        opratorDbConnection = opratorM;
+    }else if(req.body.language === 'arabic'){
+        opratorDbConnection = opratorMAr;
+    }else if(req.body.language === 'english'){
+        opratorDbConnection = opratorMEn;
+    }
     if(req.body.opratorId){
         try{
-           await opratorM.findOneAndUpdate({_id:req.body.opratorId} , {deleteDate:Date.now()});
-           const length =await opratorM.countDocuments({deleteDate:null});
+           await opratorDbConnection.findOneAndUpdate({_id:req.body.opratorId} , {deleteDate:Date.now()});
+           const length =await opratorDbConnection.countDocuments({deleteDate:null});
             res.status(200).send({msg:"اپراتور حذف شد" , ln:length});
         }catch(error){
              res.status(403).send("مشکلی پیش آمده، اپراتور حذف نشد");
@@ -141,8 +185,15 @@ router.post("/deleteOprator", verify , async (req , res , next)=>{
 });
 
 router.post("/newWaOprator", verify  ,  async (req , res , next)=>{
-
-    var newOprator = new waOpratorM({
+    var waOpratorDbConnection;
+    if(req.body.language === 'persian'){
+        waOpratorDbConnection = waOpratorM;
+    }else if(req.body.language === 'arabic'){
+        waOpratorDbConnection = waOpratorMAr;
+    }else if(req.body.language === 'english'){
+        waOpratorDbConnection = waOpratorMEn;
+    }
+    var newOprator = new waOpratorDbConnection({
         firstName:req.body.firstName,
         lastName:req.body.lastName,
         phoneNumber:req.body.phoneNumber,
@@ -159,11 +210,18 @@ router.post("/newWaOprator", verify  ,  async (req , res , next)=>{
 
 
 router.get("/getWaOprators" , verify, async (req , res , next)=>{
-
+    var waOpratorDbConnection;
+    if(req.query.language === 'persian'){
+        waOpratorDbConnection = waOpratorM;
+    }else if(req.query.language === 'arabic'){
+        waOpratorDbConnection = waOpratorMAr;
+    }else if(req.query.language === 'english'){
+        waOpratorDbConnection = waOpratorMEn;
+    }
     if(req.query.limit !== ''){
         try{
-            const result =await waOpratorM.find({deleteDate:null}).limit(parseInt(req.query.limit));
-            const length =await waOpratorM.countDocuments({deleteDate:null});
+            const result =await waOpratorDbConnection.find({deleteDate:null}).limit(parseInt(req.query.limit));
+            const length =await waOpratorDbConnection.countDocuments({deleteDate:null});
             var authorIds =[];
             var finalArr  = [];
             for(var i = 0 ; result.length > i ; i++){
@@ -186,8 +244,16 @@ router.get("/getWaOprators" , verify, async (req , res , next)=>{
 
 
 router.post("/waOpSearch", verify , async (req , res , next)=>{
+    var waOpratorDbConnection;
+    if(req.body.language === 'persian'){
+        waOpratorDbConnection = waOpratorM;
+    }else if(req.body.language === 'arabic'){
+        waOpratorDbConnection = waOpratorMAr;
+    }else if(req.body.language === 'english'){
+        waOpratorDbConnection = waOpratorMEn;
+    }
     try{
-        const result =await waOpratorM.aggregate([
+        const result =await waOpratorDbConnection.aggregate([
             {$project: {"name" : { $concat : ["$firstName"," ","$lastName"]}  , 'deleteDate':'$deleteDate', insertDate:'$insertDate' , firstName:'$firstName' , lastName:'$lastName' , phoneNumber:"$phoneNumber" , author: "$author", contactRequest:'$contactRequest'}},
             {$match: {"name": {$regex: req.body.searching} , 'deleteDate':null}}
         ]);
@@ -223,8 +289,16 @@ router.post("/waOpSearch", verify , async (req , res , next)=>{
 
 
 router.post("/updateWaOprator", verify , async (req , res , next)=>{
+    var waOpratorDbConnection;
+    if(req.body.language === 'persian'){
+        waOpratorDbConnection = waOpratorM;
+    }else if(req.body.language === 'arabic'){
+        waOpratorDbConnection = waOpratorMAr;
+    }else if(req.body.language === 'english'){
+        waOpratorDbConnection = waOpratorMEn;
+    }
     try{
-        const result =await waOpratorM.updateOne({_id:req.body.id} , {'$set': {
+        const result =await waOpratorDbConnection.updateOne({_id:req.body.id} , {'$set': {
              'firstName' : req.body.firstName,
              'lastName':req.body.lastName,
             'phoneNumber': req.body.phoneNumber,
@@ -237,10 +311,18 @@ router.post("/updateWaOprator", verify , async (req , res , next)=>{
 
 //delete category
 router.post("/deleteWaOprator", verify , async (req , res , next)=>{
+    var waOpratorDbConnection;
+    if(req.body.language === 'persian'){
+        waOpratorDbConnection = waOpratorM;
+    }else if(req.body.language === 'arabic'){
+        waOpratorDbConnection = waOpratorMAr;
+    }else if(req.body.language === 'english'){
+        waOpratorDbConnection = waOpratorMEn;
+    }
     if(req.body.opratorId){
         try{
-           await waOpratorM.findOneAndUpdate({_id:req.body.opratorId} , {deleteDate:Date.now()});
-           const length =await waOpratorM.countDocuments({deleteDate:null});
+           await waOpratorDbConnection.findOneAndUpdate({_id:req.body.opratorId} , {deleteDate:Date.now()});
+           const length =await waOpratorDbConnection.countDocuments({deleteDate:null});
             res.status(200).send({msg:"اپراتور حذف شد" , ln:length});
         }catch(error){
              res.status(403).send("مشکلی پیش آمده، اپراتور حذف نشد");
@@ -250,8 +332,16 @@ router.post("/deleteWaOprator", verify , async (req , res , next)=>{
 
 //------------************ main web api ************------------
 router.post('/newCallRequestMain' , async (req , res ) =>{
+    var opratorDbConnection;
+    if(req.body.language === 'persian'){
+        opratorDbConnection = opratorM;
+    }else if(req.body.language === 'arabic'){
+        opratorDbConnection = opratorMAr;
+    }else if(req.body.language === 'english'){
+        opratorDbConnection = opratorMEn;
+    }
     try{
-        await opratorM.updateOne({_id:req.body.targetId} , {$push:{contactRequest:{phoneNumber:req.body.phoneNumber  , called:false}}});
+        await opratorDbConnection.updateOne({_id:req.body.targetId} , {$push:{contactRequest:{phoneNumber:req.body.phoneNumber  , called:false}}});
         res.status(200).send('درخواست ثبت شد');
     }catch{
         res.status(401).send('خطا!مشکلی پیش آمده');
@@ -263,500 +353,6 @@ router.post('/newCallRequestMain' , async (req , res ) =>{
 
 
 
-//---------------------------------------------------------------Arabic---------------------------------------------------------
-
-
-const opratorMAr = dbConnection2.model("oprator" ,opratorModel);
-const waOpratorMAr = dbConnection2.model("whatsAppOprator" ,whatsAppOpratorModel);
-
-
-router.post("/newOpratorAr" , verify  ,  async (req , res , next)=>{
-
-    var newOprator = new opratorMAr({
-        firstName:req.body.firstName,
-        lastName:req.body.lastName,
-        phoneNumbers:req.body.phoneNumbers,
-        author:req.body.author
-    })
-    try{
-        const result = await newOprator.save();            
-        res.status(200).send("اپراتور ذخیره شد");
-    }catch(error){
-        console.log(error);
-        res.status(500).send("مشکلی رخ داده است");
-    }
-});
-
-
-router.get("/getOpratorsAr", verify , async (req , res , next)=>{
-    if(req.query.limit !== ''){
-        try{
-            const result =await opratorMAr.find({deleteDate:null}).limit(parseInt(req.query.limit));
-            const length =await opratorMAr.countDocuments({deleteDate:null});
-            var authorIds =[];
-            var finalArr  = [];
-            for(var i = 0 ; result.length > i ; i++){
-                authorIds.push(result[i].author);
-            }
-            const rs2 = await user.find({deleteDate:null}).where('_id').in(authorIds);
-            for(var i = 0 ; result.length > i ; i++){
-                for(var j = 0 ; rs2.length > j ; j++){
-                    if(JSON.stringify(result[i].author) === JSON.stringify(rs2[j]._id)){
-                        finalArr.push({oprator:result[i] , author:rs2[j]});
-                    }
-                }
-            }
-            
-            res.status(200).send(JSON.stringify({ln:length , rs:finalArr})); 
-            }catch(err){
-            res.status(500).send("مشکلی پیش آمده");
-        }
-    }
-});
-
-
-router.post("/opSearchAr", verify , async (req , res , next)=>{
-
-        try{
-            const result =await opratorMAr.aggregate([
-                {$project: {"name" : { $concat : ["$firstName"," ","$lastName"]}  , 'deleteDate':'$deleteDate', insertDate:'$insertDate' , firstName:'$firstName' , lastName:'$lastName' , phoneNumbers:"$phoneNumbers" , author: "$author", contactRequest:'$contactRequest'}},
-                {$match: {"name": {$regex: req.body.searching} , 'deleteDate':null}}
-            ]);
-            var authorIds =[];
-            var finalArr  = [];
-            for(var i = 0 ; result.length > i ; i++){
-                authorIds.push(result[i].author);
-            }
-            const rs2 = await user.find({deleteDate:null}).where('_id').in(authorIds);
-            for(var i = 0 ; result.length > i ; i++){
-                for(var j = 0 ; rs2.length > j ; j++){
-                    if(JSON.stringify(result[i].author) === JSON.stringify(rs2[j]._id)){
-                        finalArr.push({oprator:result[i] , author:rs2[j]});
-                    }
-                }
-            }
-            res.status(200).send(JSON.stringify(finalArr)); 
-        }catch{
-            res.status(500).send("مشکلی پیش آمده"); 
-        }
-    
-});
-
-
-// router.get("/getOprator" , async (req , res , next)=>{
-//         try{
-//             const result =await opratorModel.findOne({_id:req.query.opratorId});
-//             res.status(200).send(result);  
-//         }catch(err){
-//             res.status(500).send("مشکلی پیش آمده");
-//         }
-// });
-
-
-router.post("/updateOpratorAr", verify , async (req , res , next)=>{
-    try{
-        const result =await opratorMAr.updateOne({_id:req.body.id} , {'$set': {
-             'firstName' : req.body.firstName,
-             'lastName':req.body.lastName,
-            'phoneNumbers': req.body.phoneNumbers,
-        }});
-        res.status(200).send(result);  
-    }catch(err){
-        res.status(500).send("مشکلی پیش آمده");
-    }
-});
-
-//delete category
-router.post("/deleteOpratorAr", verify , async (req , res , next)=>{
-    if(req.body.opratorId){
-        try{
-           await opratorMAr.findOneAndUpdate({_id:req.body.opratorId} , {deleteDate:Date.now()});
-           const length =await opratorMAr.countDocuments({deleteDate:null});
-            res.status(200).send({msg:"اپراتور حذف شد" , ln:length});
-        }catch(error){
-             res.status(403).send("مشکلی پیش آمده، اپراتور حذف نشد");
-        }
-    }
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-router.post("/newWaOpratorAr", verify  ,  async (req , res , next)=>{
-
-    var newOprator = new waOpratorMAr({
-        firstName:req.body.firstName,
-        lastName:req.body.lastName,
-        phoneNumber:req.body.phoneNumber,
-        author:req.body.author
-    })
-    try{
-        const result = await newOprator.save();            
-        res.status(200).send("اپراتور ذخیره شد");
-    }catch(error){
-        console.log(error);
-        res.status(500).send("مشکلی رخ داده است");
-    }
-});
-
-
-router.get("/getWaOpratorsAr" , verify, async (req , res , next)=>{
-
-    if(req.query.limit !== ''){
-        try{
-            const result =await waOpratorMAr.find({deleteDate:null}).limit(parseInt(req.query.limit));
-            const length =await waOpratorMAr.countDocuments({deleteDate:null});
-            var authorIds =[];
-            var finalArr  = [];
-            for(var i = 0 ; result.length > i ; i++){
-                authorIds.push(result[i].author);
-            }
-            const rs2 = await user.find({deleteDate:null}).select('firstName , lastName , validation , role , insertDate , profileImage').where('_id').in(authorIds);
-            for(var i = 0 ; result.length > i ; i++){
-                for(var j = 0 ; rs2.length > j ; j++){
-                    if(JSON.stringify(result[i].author) === JSON.stringify(rs2[j]._id)){
-                        finalArr.push({waOprator:result[i] , author:rs2[j]});
-                    }
-                }
-            }
-            res.status(200).send(JSON.stringify({ln:length , rs:finalArr})); 
-            }catch(err){
-            res.status(500).send("مشکلی پیش آمده");
-        }
-    }
-});
-
-
-router.post("/waOpSearchAr", verify , async (req , res , next)=>{
-    try{
-        const result =await waOpratorMAr.aggregate([
-            {$project: {"name" : { $concat : ["$firstName"," ","$lastName"]}  , 'deleteDate':'$deleteDate', insertDate:'$insertDate' , firstName:'$firstName' , lastName:'$lastName' , phoneNumber:"$phoneNumber" , author: "$author", contactRequest:'$contactRequest'}},
-            {$match: {"name": {$regex: req.body.searching} , 'deleteDate':null}}
-        ]);
-        var authorIds =[];
-        var finalArr  = [];
-        for(var i = 0 ; result.length > i ; i++){
-            authorIds.push(result[i].author);
-        }
-        const rs2 = await user.find({deleteDate:null}).where('_id').in(authorIds);
-        for(var i = 0 ; result.length > i ; i++){
-            for(var j = 0 ; rs2.length > j ; j++){
-                if(JSON.stringify(result[i].author) === JSON.stringify(rs2[j]._id)){
-                    finalArr.push({waOprator:result[i] , author:rs2[j]});
-                }
-            }
-        }
-        res.status(200).send(JSON.stringify(finalArr)); 
-    }catch{
-        res.status(500).send("مشکلی پیش آمده"); 
-    }
-        
-});
-
-
-// router.get("/getWaOprator" , async (req , res , next)=>{
-//         try{
-//             const result =await opratorModel.findOne({_id:req.query.opratorId});
-//             res.status(200).send(result);  
-//         }catch(err){
-//             res.status(500).send("مشکلی پیش آمده");
-//         }
-// });
-
-
-router.post("/updateWaOpratorAr", verify , async (req , res , next)=>{
-    try{
-        const result =await waOpratorMAr.updateOne({_id:req.body.id} , {'$set': {
-             'firstName' : req.body.firstName,
-             'lastName':req.body.lastName,
-            'phoneNumber': req.body.phoneNumber,
-        }});
-        res.status(200).send(result);  
-    }catch(err){
-        res.status(500).send("مشکلی پیش آمده");
-    }
-});
-
-//delete category
-router.post("/deleteWaOpratorAr", verify , async (req , res , next)=>{
-    if(req.body.opratorId){
-        try{
-           await waOpratorMAr.findOneAndUpdate({_id:req.body.opratorId} , {deleteDate:Date.now()});
-           const length =await waOpratorMAr.countDocuments({deleteDate:null});
-            res.status(200).send({msg:"اپراتور حذف شد" , ln:length});
-        }catch(error){
-             res.status(403).send("مشکلی پیش آمده، اپراتور حذف نشد");
-        }
-    }
-});
-
-//------------************ main web api ************------------
-router.post('/newCallRequestMainAr' , async (req , res ) =>{
-    try{
-        await opratorMAr.updateOne({_id:req.body.targetId} , {$push:{contactRequest:{phoneNumber:req.body.phoneNumber  , called:false}}});
-        res.status(200).send('درخواست ثبت شد');
-    }catch{
-        res.status(401).send('خطا!مشکلی پیش آمده');
-    }
-})
-
-//---------------------------------------------------------------English---------------------------------------------------------
-
-
-const opratorMEn = dbConnection3.model("oprator" ,opratorModel);
-const waOpratorMEn = dbConnection3.model("whatsAppOprator" ,whatsAppOpratorModel);
-
-
-router.post("/newOpratorEn" , verify  ,  async (req , res , next)=>{
-
-    var newOprator = new opratorMEn({
-        firstName:req.body.firstName,
-        lastName:req.body.lastName,
-        phoneNumbers:req.body.phoneNumbers,
-        author:req.body.author
-    })
-    try{
-        const result = await newOprator.save();            
-        res.status(200).send("اپراتور ذخیره شد");
-    }catch(error){
-        console.log(error);
-        res.status(500).send("مشکلی رخ داده است");
-    }
-});
-
-
-router.get("/getOpratorsEn", verify , async (req , res , next)=>{
-    if(req.query.limit !== ''){
-        try{
-            const result =await opratorMEn.find({deleteDate:null}).limit(parseInt(req.query.limit));
-            const length =await opratorMEn.countDocuments({deleteDate:null});
-            var authorIds =[];
-            var finalArr  = [];
-            for(var i = 0 ; result.length > i ; i++){
-                authorIds.push(result[i].author);
-            }
-            const rs2 = await user.find({deleteDate:null}).where('_id').in(authorIds);
-            for(var i = 0 ; result.length > i ; i++){
-                for(var j = 0 ; rs2.length > j ; j++){
-                    if(JSON.stringify(result[i].author) === JSON.stringify(rs2[j]._id)){
-                        finalArr.push({oprator:result[i] , author:rs2[j]});
-                    }
-                }
-            }
-            
-            res.status(200).send(JSON.stringify({ln:length , rs:finalArr})); 
-            }catch(err){
-            res.status(500).send("مشکلی پیش آمده");
-        }
-    }
-});
-
-
-router.post("/opSearchEn", verify , async (req , res , next)=>{
-
-        try{
-            const result =await opratorMEn.aggregate([
-                {$project: {"name" : { $concat : ["$firstName"," ","$lastName"]}  , 'deleteDate':'$deleteDate', insertDate:'$insertDate' , firstName:'$firstName' , lastName:'$lastName' , phoneNumbers:"$phoneNumbers" , author: "$author", contactRequest:'$contactRequest'}},
-                {$match: {"name": {$regex: req.body.searching} , 'deleteDate':null}}
-            ]);
-            var authorIds =[];
-            var finalArr  = [];
-            for(var i = 0 ; result.length > i ; i++){
-                authorIds.push(result[i].author);
-            }
-            const rs2 = await user.find({deleteDate:null}).where('_id').in(authorIds);
-            for(var i = 0 ; result.length > i ; i++){
-                for(var j = 0 ; rs2.length > j ; j++){
-                    if(JSON.stringify(result[i].author) === JSON.stringify(rs2[j]._id)){
-                        finalArr.push({oprator:result[i] , author:rs2[j]});
-                    }
-                }
-            }
-            res.status(200).send(JSON.stringify(finalArr)); 
-        }catch{
-            res.status(500).send("مشکلی پیش آمده"); 
-        }
-    
-});
-
-
-// router.get("/getOprator" , async (req , res , next)=>{
-//         try{
-//             const result =await opratorModel.findOne({_id:req.query.opratorId});
-//             res.status(200).send(result);  
-//         }catch(err){
-//             res.status(500).send("مشکلی پیش آمده");
-//         }
-// });
-
-
-router.post("/updateOpratorEn", verify , async (req , res , next)=>{
-    try{
-        const result =await opratorMEn.updateOne({_id:req.body.id} , {'$set': {
-             'firstName' : req.body.firstName,
-             'lastName':req.body.lastName,
-            'phoneNumbers': req.body.phoneNumbers,
-        }});
-        res.status(200).send(result);  
-    }catch(err){
-        res.status(500).send("مشکلی پیش آمده");
-    }
-});
-
-//delete category
-router.post("/deleteOpratorEn", verify , async (req , res , next)=>{
-    if(req.body.opratorId){
-        try{
-           await opratorMEn.findOneAndUpdate({_id:req.body.opratorId} , {deleteDate:Date.now()});
-           const length =await opratorMEn.countDocuments({deleteDate:null});
-            res.status(200).send({msg:"اپراتور حذف شد" , ln:length});
-        }catch(error){
-             res.status(403).send("مشکلی پیش آمده، اپراتور حذف نشد");
-        }
-    }
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-router.post("/newWaOpratorEn", verify  ,  async (req , res , next)=>{
-
-    var newOprator = new waOpratorMEn({
-        firstName:req.body.firstName,
-        lastName:req.body.lastName,
-        phoneNumber:req.body.phoneNumber,
-        author:req.body.author
-    })
-    try{
-        const result = await newOprator.save();            
-        res.status(200).send("اپراتور ذخیره شد");
-    }catch(error){
-        console.log(error);
-        res.status(500).send("مشکلی رخ داده است");
-    }
-});
-
-
-router.get("/getWaOpratorsEn" , verify, async (req , res , next)=>{
-
-    if(req.query.limit !== ''){
-        try{
-            const result =await waOpratorMEn.find({deleteDate:null}).limit(parseInt(req.query.limit));
-            const length =await waOpratorMEn.countDocuments({deleteDate:null});
-            var authorIds =[];
-            var finalArr  = [];
-            for(var i = 0 ; result.length > i ; i++){
-                authorIds.push(result[i].author);
-            }
-            const rs2 = await user.find({deleteDate:null}).select('firstName , lastName , validation , role , insertDate , profileImage').where('_id').in(authorIds);
-            for(var i = 0 ; result.length > i ; i++){
-                for(var j = 0 ; rs2.length > j ; j++){
-                    if(JSON.stringify(result[i].author) === JSON.stringify(rs2[j]._id)){
-                        finalArr.push({waOprator:result[i] , author:rs2[j]});
-                    }
-                }
-            }
-            res.status(200).send(JSON.stringify({ln:length , rs:finalArr})); 
-            }catch(err){
-            res.status(500).send("مشکلی پیش آمده");
-        }
-    }
-});
-
-
-router.post("/waOpSearchEn", verify , async (req , res , next)=>{
-    try{
-        const result =await waOpratorMEn.aggregate([
-            {$project: {"name" : { $concat : ["$firstName"," ","$lastName"]}  , 'deleteDate':'$deleteDate', insertDate:'$insertDate' , firstName:'$firstName' , lastName:'$lastName' , phoneNumber:"$phoneNumber" , author: "$author", contactRequest:'$contactRequest'}},
-            {$match: {"name": {$regex: req.body.searching} , 'deleteDate':null}}
-        ]);
-        var authorIds =[];
-        var finalArr  = [];
-        for(var i = 0 ; result.length > i ; i++){
-            authorIds.push(result[i].author);
-        }
-        const rs2 = await user.find({deleteDate:null}).where('_id').in(authorIds);
-        for(var i = 0 ; result.length > i ; i++){
-            for(var j = 0 ; rs2.length > j ; j++){
-                if(JSON.stringify(result[i].author) === JSON.stringify(rs2[j]._id)){
-                    finalArr.push({waOprator:result[i] , author:rs2[j]});
-                }
-            }
-        }
-        res.status(200).send(JSON.stringify(finalArr)); 
-    }catch{
-        res.status(500).send("مشکلی پیش آمده"); 
-    }
-        
-});
-
-
-// router.get("/getWaOprator" , async (req , res , next)=>{
-//         try{
-//             const result =await opratorModel.findOne({_id:req.query.opratorId});
-//             res.status(200).send(result);  
-//         }catch(err){
-//             res.status(500).send("مشکلی پیش آمده");
-//         }
-// });
-
-
-router.post("/updateWaOpratorEn", verify , async (req , res , next)=>{
-    try{
-        const result =await waOpratorMEn.updateOne({_id:req.body.id} , {'$set': {
-             'firstName' : req.body.firstName,
-             'lastName':req.body.lastName,
-            'phoneNumber': req.body.phoneNumber,
-        }});
-        res.status(200).send(result);  
-    }catch(err){
-        res.status(500).send("مشکلی پیش آمده");
-    }
-});
-
-//delete category
-router.post("/deleteWaOpratorEn", verify , async (req , res , next)=>{
-    if(req.body.opratorId){
-        try{
-           await waOpratorMEn.findOneAndUpdate({_id:req.body.opratorId} , {deleteDate:Date.now()});
-           const length =await waOpratorMEn.countDocuments({deleteDate:null});
-            res.status(200).send({msg:"اپراتور حذف شد" , ln:length});
-        }catch(error){
-             res.status(403).send("مشکلی پیش آمده، اپراتور حذف نشد");
-        }
-    }
-});
-
-
-//------------************ main web api ************------------
-router.post('/newCallRequestMainEn' , async (req , res ) =>{
-    try{
-        await opratorMEn.updateOne({_id:req.body.targetId} , {$push:{contactRequest:{phoneNumber:req.body.phoneNumber  , called:false}}});
-        res.status(200).send('درخواست ثبت شد');
-    }catch{
-        res.status(401).send('خطا!مشکلی پیش آمده');
-    }
-})
 
 module.exports = router;     
 

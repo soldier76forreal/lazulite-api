@@ -42,11 +42,15 @@ router.post("/uploadImage"  , verify , upload.single("images"), async (req , res
 });
 
 router.get("/getImages", verify , async (req , res , next)=>{
+    var result = [];
+    var finalRes = [];
     if(req.query.limit !== ''){
         try{
-            const result =await images.find({deleteDate:null}).limit(parseInt(req.query.limit));
+            result =await images.find({deleteDate:null});
+            result.reverse();
+            finalRes = result.slice(0, parseInt(req.query.limit) + 0);
             const length =await images.countDocuments({deleteDate:null});
-            res.status(200).send(JSON.stringify({ln:length , rs:result}));  
+            res.status(200).send(JSON.stringify({ln:length , rs:finalRes}));  
         }catch(err){
             res.status(500).send("مشکلی پیش آمده");
         }
@@ -94,7 +98,6 @@ router.post("/updateImageName", verify , async (req , res , next)=>{
             const findImage = await images.findOne({_id:req.body.id});
             const format = findImage.metaData.originalname.split(".").pop();
             const newOriginalName = `${req.body.newName}.${format}`;
-            console.log(newOriginalName);
             const result = await images.findOneAndUpdate({_id:req.body.id} , {'metaData.originalname': newOriginalName, imageName:req.body.newName , updateDate:Date.now()});
             res.status(200).send("نام ویرایش شد");
         }catch(error){
@@ -102,7 +105,17 @@ router.post("/updateImageName", verify , async (req , res , next)=>{
         }
     }
 });
-
+//update image title
+router.post("/changeImageTitle", verify , async (req , res , next)=>{
+    if(req.body.id){
+        try{
+            const result = await images.findOneAndUpdate({_id:req.body.id} , {title:req.body.title , updateDate:Date.now()});
+            res.status(200).send("عنوان ویرایش شد");
+        }catch(error){
+             res.status(403).send("مشکلی پیش آمده، عنوان ویرایش نشد");
+        }
+    }
+});
 //videos 
 router.post("/uploadVideo" , verify  , upload.single("images"), async (req , res , next)=>{
     
@@ -120,11 +133,15 @@ router.post("/uploadVideo" , verify  , upload.single("images"), async (req , res
 });
 
 router.get("/getVideo", verify, async (req , res , next)=>{
+    var result = [];
+    var finalRes = [];
     if(req.query.limit !== ''){
         try{
-            const result =await video.find({deleteDate:null}).limit(parseInt(req.query.limit));
+            result =await video.find({deleteDate:null});
+            result.reverse();
+            finalRes = result.slice(0, parseInt(req.query.limit) + 0);
             const length =await video.countDocuments({deleteDate:null});
-            res.status(200).send(JSON.stringify({ln:length , rs:result}));  
+            res.status(200).send(JSON.stringify({ln:length , rs:finalRes}));  
         }catch(err){
             res.status(500).send("مشکلی پیش آمده");
         }
@@ -177,6 +194,28 @@ router.post("/searchInVideo", verify , async (req , res , next)=>{
 
     }
 });
+
+
+//get image 
+router.post("/getImage", verify , async (req , res , next)=>{
+    // var regex = new RegExp(req.body.searching, "i");
+    if(req.body.searching){
+        try{
+            const searched = await video.find({
+                deleteDate:null,
+                "videoName" :   { "$regex": req.body.searching, "$options":"i"}
+            }).limit(parseInt(20));
+            res.status(200).send(searched);
+        }catch(err){
+            res.status(500).send("مشکلی پیش آمده");
+        }
+
+    }else{
+        res.status(200).send([]);
+
+    }
+});
+
 
 module.exports = router;     
 

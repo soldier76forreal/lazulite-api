@@ -5,6 +5,4 @@ const dbConnection_ar = mongoose.createConnection(process.env.DB_CONNECTAr, {
     useUnifiedTopology: true,
     useFindAndModify: false 
 });
-
-
 module.exports = dbConnection_ar;

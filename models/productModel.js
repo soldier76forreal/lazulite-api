@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 // var moment = require('jalali-moment');
 
 const productSchema = new mongoose.Schema ({
-    author : {type : String , require:true },
+    author : {type : String , require:true},
     title:{type:String , required:true},
     productCode:{type:String , required:true},
     availableSurface:{type:Number , required:true},
@@ -18,6 +18,8 @@ const productSchema = new mongoose.Schema ({
     insertDate : {type:Date , default:Date.now},
     validation : {type : Boolean , default:false },
     stock: {type:Boolean , default:true},
+    pageTitle:{type:String},
+    pageDescription:{type:String},
     updateDate : {type:Date , default:null },
     deleteDate : {type:Date , default:null }
     // date : {type:Date , default:moment().locale('fa').format('YYYY/M/D')}

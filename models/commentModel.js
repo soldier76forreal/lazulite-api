@@ -8,7 +8,7 @@ const commentSchema = new mongoose.Schema ({
     rate: {type:Number},
     dislikes : {type : Array},
     targetPost : {type: mongoose.Schema.Types.ObjectId , required:true},
-    replys :{ type: mongoose.Schema.Types.ObjectId , default:null},
+    replies :[{ type: mongoose.Schema.Types.ObjectId }],
     validation : {type : Boolean ,  required:true}, 
     insertDate : {type:Date , default:Date.now},
     updateDate : {type:Date , default:null },

@@ -7,7 +7,6 @@ const multer  = require('multer')
 const upload = multer({ dest: 'public/files' })
 const dotenv = require("dotenv");
 
-
 //express middlewear
 const app = express();
 
@@ -39,6 +38,9 @@ app.use('/oprators' , require("./routes/controlPanel/oprators"));
 app.use('/newProduct' , require("./routes/controlPanel/newProduct"));
 app.use('/product' , require("./routes/controlPanel/product"));
 app.use('/users' , require("./routes/controlPanel/users"));
+app.use('/blog' , require("./routes/controlPanel/blogPost"));
+app.use('/liveGallery' , require("./routes/controlPanel/liveGallery"));
+
 
 
 app.use('/comment' , require("./routes/controlPanel/comment"));
