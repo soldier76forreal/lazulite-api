@@ -588,22 +588,40 @@ router.get("/getAllCategoriesWithTagsForMainPage" ,async(req , res)=>{
         if(req.query.language === 'persian'){
             result = await category.find({deleteDate:null , validation:true});
             for(var i = 0 ; result.length>i ; i++){
-                rs2 = await tag.find({deleteDate:null}).where('_id').in(result[i].tagsId);
-                arrayToSend.push({category:result[i] , tags:rs2 });
+
+                if(result[i].tagsId.length !==0){
+                    rs2 = await tag.find({deleteDate:null}).where('_id').in(result[i].tagsId);
+                    arrayToSend.push({category:result[i] , tags:rs2 });
+                }else{
+                    arrayToSend.push({category:result[i] , tags:[] });
+
+                }
             }
         }else if(req.query.language === 'arabic'){
             result = await categoryAr.find({deleteDate:null , validation:true});
             for(var i = 0 ; result.length>i ; i++){
-                rs2 = await tagAr.find({deleteDate:null}).where('_id').in(result[i].tagsId);
-                arrayToSend.push({category:result[i] , tags:rs2 });
+                if(result[i].tagsId.length !==0){
+                    rs2 = await tagAr.find({deleteDate:null}).where('_id').in(result[i].tagsId);
+                    arrayToSend.push({category:result[i] , tags:rs2 });
+                }else{
+                    arrayToSend.push({category:result[i] , tags:[] });
+                }
+
             }
         }else if(req.query.language === 'english'){
             result = await categoryEn.find({deleteDate:null , validation:true});
             for(var i = 0 ; result.length>i ; i++){
-                rs2 = await tagEn.find({deleteDate:null}).where('_id').in(result[i].tagsId);
-                arrayToSend.push({category:result[i] , tags:rs2 });
+                if(result[i].tagsId.length !==0){
+                    rs2 = await tagEn.find({deleteDate:null}).where('_id').in(result[i].tagsId);
+                    console.log(result[i].tagsId)
+                    arrayToSend.push({category:result[i] , tags:rs2 });
+                }else{
+                    arrayToSend.push({category:result[i] , tags:[] });
+                }
             }
         }
+
+       
         res.status(200).send(JSON.stringify({rs:arrayToSend}));
     }catch(err){
         console.log(err)

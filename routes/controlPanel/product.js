@@ -574,9 +574,25 @@ router.get("/productListByCategoryAndTagMain" , async (req , res)=>{
 
     var totalDocument  = [];
     if(req.query.state === 'category'){
-        totalDocument =  await product.find({categories:req.query.id , deleteDate:null , validation:true}).exec();
+        if(req.query.language === 'persian'){
+            totalDocument =  await product.find({categories:req.query.id , deleteDate:null , validation:true}).exec();
+
+        }else if(req.query.language === 'arabic'){
+            totalDocument =  await productAr.find({categories:req.query.id , deleteDate:null , validation:true}).exec();
+
+        }else if(req.query.language === 'english'){
+            totalDocument =  await productEn.find({categories:req.query.id , deleteDate:null , validation:true}).exec();
+
+        }
     }else if(req.query.state === 'tag'){
-        totalDocument =  await product.find({tags:req.query.id , deleteDate:null , validation:true}).exec();
+        if(req.query.language === 'persian'){
+            totalDocument =  await product.find({tags:req.query.id , deleteDate:null , validation:true}).exec();
+        }else if(req.query.language === 'arabic'){
+            totalDocument =  await productAr.find({tags:req.query.id , deleteDate:null , validation:true}).exec();
+        }else if(req.query.language === 'english'){
+            totalDocument =  await productEn.find({tags:req.query.id , deleteDate:null , validation:true}).exec();
+
+        }
     }
     // var max = 0; 
     // var min = totalDocument[1].price.price;
@@ -656,6 +672,7 @@ router.get("/productListByCategoryAndTagMain" , async (req , res)=>{
       limit: 10  
   
     }
+    console.log(totalDocument)
     try{
         results.results = totalDocument.slice(startIndex, limit + startIndex);
         var rating = 0;
